@@ -225,83 +225,84 @@
     "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
 
   async function carregarCursos() {
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  "https://nydgcbmfvoszchuixaml.supabase.co";
 
-    const status = document.getElementById("status");
-    const container = document.getElementById("cursos");
+const SUPABASE_KEY =
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
+  "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
 
-    try {
+module.exports = async function handler(req, res) {
+  // Aceita somente GET
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
 
-      const url =
-        SUPABASE_URL +
-        "/rest/v1/courses" +
-        "?select=id,slug,title,description,trilha,cover_url,order_index" +
-        "&published=eq.true" +
-        "&order=order_index.asc";
-
-      const resposta = await fetch(url, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY,
-          "Accept": "application/json"
-        }
-      });
-
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        console.error(dados);
-        throw new Error("Erro ao consultar cursos");
-      }
-
-      if (!Array.isArray(dados) || dados.length === 0) {
-        status.textContent = "Nenhum curso publicado ainda.";
-        return;
-      }
-
-      status.style.display = "none";
-
-      container.innerHTML = dados.map(curso => {
-
-        return `
-          <a class="curso"
-             href="/curso.html?id=${encodeURIComponent(curso.id)}">
-
-            <div class="capa">
-              ${escapeHtml(curso.title || "Curso")}
-            </div>
-
-            <div class="conteudo">
-
-              <div class="trilha">
-                ${escapeHtml(curso.trilha || "Curso")}
-              </div>
-
-              <h3>
-                ${escapeHtml(curso.title || "Curso")}
-              </h3>
-
-              <p>
-                ${escapeHtml(curso.description || "Curso completo em formato e-book.")}
-              </p>
-
-            </div>
-
-          </a>
-        `;
-
-      }).join("");
-
-    } catch (erro) {
-
-      console.error(erro);
-
-      status.innerHTML =
-        "Não foi possível carregar os cursos agora.<br>" +
-        "Verifique a configuração do Supabase.";
-
-    }
+    return res.status(405).json({
+      error: "Método não permitido."
+    });
   }
 
+  try {
+    const params = new URLSearchParams({
+      select:
+        "id,slug,title,description,trilha,cover_url,order_index",
+      published: "eq.true",
+      order: "order_index.asc"
+    });
+
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/courses?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Accept: "application/json"
+        }
+      }
+    );
+
+    const text = await response.text();
+
+    let data;
+
+    try {
+      data = text ? JSON.parse(text) : [];
+    } catch {
+      data = [];
+    }
+
+    if (!response.ok) {
+      console.error(
+        "Erro do Supabase:",
+        response.status,
+        data
+      );
+
+      return res.status(502).json({
+        error: "Não foi possível carregar os cursos.",
+        code: "SUPABASE_ERROR"
+      });
+    }
+
+    return res.status(200).json({
+      courses: Array.isArray(data) ? data : []
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Erro na API de cursos:",
+      error
+    );
+
+    return res.status(500).json({
+      error: "Erro interno ao carregar os cursos.",
+      code: "COURSES_API_ERROR"
+    });
+  }
+}; 
   function escapeHtml(valor) {
 
     return String(valor)
