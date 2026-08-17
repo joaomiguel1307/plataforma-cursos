@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar | Plataforma de Cursos</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background: #f5f3ee;
+      color: #2b2f38;
+    }
+
+    .box {
+      width: 100%;
+      max-width: 420px;
+      margin: 20px;
+      padding: 30px;
+      background: white;
+      border: 1px solid #d8d4c8;
+      border-radius: 12px;
+    }
+
+    h1 {
+      color: #1b2a4a;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d8d4c8;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 0;
+      border-radius: 25px;
+      background: #c99a3b;
+      color: #1b2a4a;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .links {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    a {
+      color: #1b2a4a;
+      text-decoration: none;
+    }
+
+    #mensagem {
+      margin-top: 15px;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>Entrar</h1>
+
+  <p>Entre na sua conta para acessar seus cursos.</p>
+
+  <form id="form">
+
+    <label for="email">E-mail</label>
+    <input
+      id="email"
+      type="email"
+      required
+      autocomplete="email"
+    >
+
+    <label for="senha">Senha</label>
+    <input
+      id="senha"
+      type="password"
+      required
+      autocomplete="current-password"
+    >
+
+    <button type="submit" id="botao">
+      Entrar
+    </button>
+
+  </form>
+
+  <div id="mensagem"></div>
+
+  <div class="links">
+    <p>
+      <a href="/esqueci-senha.html">Esqueci minha senha</a>
+    </p>
+
+    <p>
+      Ainda não tem conta?
+      <a href="/cadastro.html">Criar conta</a>
+    </p>
+
+    <p>
+      <a href="/">← Voltar para os cursos</a>
+    </p>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  const SUPABASE_URL =
+    "https://nydgcbmfvoszchuixaml.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
+
+  const supabase =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+  const form = document.getElementById("form");
+  const mensagem = document.getElementById("mensagem");
+  const botao = document.getElementById("botao");
+
+  form.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const senha =
+      document.getElementById("senha").value;
+
+    mensagem.textContent = "Entrando...";
+    botao.disabled = true;
+
+    try {
+
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password: senha
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      mensagem.textContent =
+        "Login realizado! Redirecionando...";
+
+      setTimeout(function() {
+        window.location.href = "/dashboard.html";
+      }, 500);
+
+    } catch (error) {
+
+      console.error(error);
+
+      mensagem.textContent =
+        error.message ||
+        "Não foi possível entrar. Verifique seus dados.";
+
+      botao.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
