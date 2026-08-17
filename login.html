@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Entrar | Plataforma de Cursos</title>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -61,6 +64,10 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.6;
+    }
+
     .links {
       margin-top: 20px;
       text-align: center;
@@ -75,6 +82,7 @@
       margin-top: 15px;
       text-align: center;
       line-height: 1.5;
+      min-height: 24px;
     }
   </style>
 </head>
@@ -90,6 +98,7 @@
   <form id="form">
 
     <label for="email">E-mail</label>
+
     <input
       id="email"
       type="email"
@@ -98,6 +107,7 @@
     >
 
     <label for="senha">Senha</label>
+
     <input
       id="senha"
       type="password"
@@ -105,7 +115,10 @@
       autocomplete="current-password"
     >
 
-    <button type="submit" id="botao">
+    <button
+      type="submit"
+      id="botao"
+    >
       Entrar
     </button>
 
@@ -114,84 +127,183 @@
   <div id="mensagem"></div>
 
   <div class="links">
+
     <p>
-      <a href="/esqueci-senha.html">Esqueci minha senha</a>
+      <a href="/esqueci-senha.html">
+        Esqueci minha senha
+      </a>
     </p>
 
     <p>
       Ainda não tem conta?
-      <a href="/cadastro.html">Criar conta</a>
+      <a href="/cadastro.html">
+        Criar conta
+      </a>
     </p>
 
     <p>
-      <a href="/">← Voltar para os cursos</a>
+      <a href="/">
+        ← Voltar para os cursos
+      </a>
     </p>
+
   </div>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
+
   const SUPABASE_URL =
     "https://nydgcbmfvoszchuixaml.supabase.co";
 
   const SUPABASE_KEY =
     "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
 
-  const supabase =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+  const form =
+    document.getElementById("form");
 
-  const form = document.getElementById("form");
-  const mensagem = document.getElementById("mensagem");
-  const botao = document.getElementById("botao");
+  const mensagem =
+    document.getElementById("mensagem");
 
-  form.addEventListener("submit", async function(event) {
+  const botao =
+    document.getElementById("botao");
 
-    event.preventDefault();
 
-    const email =
-      document.getElementById("email").value.trim();
+  form.addEventListener(
+    "submit",
+    async function(event) {
 
-    const senha =
-      document.getElementById("senha").value;
+      event.preventDefault();
 
-    mensagem.textContent = "Entrando...";
-    botao.disabled = true;
+      mensagem.textContent =
+        "Entrando...";
 
-    try {
+      botao.disabled = true;
 
-      const { error } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password: senha
-        });
+      const email =
+        document
+          .getElementById("email")
+          .value
+          .trim();
 
-      if (error) {
-        throw error;
+      const senha =
+        document
+          .getElementById("senha")
+          .value;
+
+
+      try {
+
+        const resposta =
+          await fetch(
+            SUPABASE_URL +
+            "/auth/v1/token?grant_type=password",
+            {
+              method: "POST",
+
+              headers: {
+                "apikey": SUPABASE_KEY,
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                email: email,
+                password: senha
+              })
+            }
+          );
+
+
+        const resultado =
+          await resposta.json();
+
+
+        if (!resposta.ok) {
+
+          throw new Error(
+            resultado.msg ||
+            resultado.error_description ||
+            resultado.message ||
+            "E-mail ou senha inválidos."
+          );
+
+        }
+
+
+        /*
+         * Salva a sessão no mesmo formato
+         * utilizado pelo Supabase JS.
+         */
+
+        const projeto =
+          "nydgcbmfvoszchuixaml";
+
+        const chave =
+          "sb-" +
+          projeto +
+          "-auth-token";
+
+
+        const sessao = {
+
+          access_token:
+            resultado.access_token,
+
+          refresh_token:
+            resultado.refresh_token,
+
+          expires_in:
+            resultado.expires_in,
+
+          expires_at:
+            Math.floor(
+              Date.now() / 1000
+            ) +
+            resultado.expires_in,
+
+          token_type:
+            resultado.token_type,
+
+          user:
+            resultado.user
+
+        };
+
+
+        localStorage.setItem(
+          chave,
+          JSON.stringify(sessao)
+        );
+
+
+        mensagem.textContent =
+          "Login realizado! Redirecionando...";
+
+
+        setTimeout(function() {
+
+          window.location.href =
+            "/dashboard.html";
+
+        }, 500);
+
+
+      } catch (erro) {
+
+        console.error(erro);
+
+        mensagem.textContent =
+          erro.message ||
+          "Não foi possível entrar.";
+
+        botao.disabled = false;
+
       }
 
-      mensagem.textContent =
-        "Login realizado! Redirecionando...";
-
-      setTimeout(function() {
-        window.location.href = "/dashboard.html";
-      }, 500);
-
-    } catch (error) {
-
-      console.error(error);
-
-      mensagem.textContent =
-        error.message ||
-        "Não foi possível entrar. Verifique seus dados.";
-
-      botao.disabled = false;
     }
-  });
+  );
+
 </script>
 
 </body>
