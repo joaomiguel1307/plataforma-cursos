@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Área | Plataforma de Cursos</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f3ee;
+      color: #2b2f38;
+    }
+
+    header {
+      background: #1b2a4a;
+      color: white;
+      padding: 18px 20px;
+    }
+
+    header .container {
+      max-width: 1000px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-weight: bold;
+    }
+
+    header a,
+    header button {
+      color: white;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: bold;
+      margin-left: 15px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 25px 20px;
+    }
+
+    .welcome {
+      margin-bottom: 30px;
+    }
+
+    h1,
+    h2 {
+      color: #1b2a4a;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #d8d4c8;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      color: #5b6474;
+    }
+
+    .curso {
+      border: 1px solid #d8d4c8;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 15px;
+      background: #fff;
+    }
+
+    .curso h3 {
+      color: #1b2a4a;
+      margin-top: 0;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 20px;
+      background: #c99a3b;
+      color: #1b2a4a;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #mensagem {
+      margin-top: 20px;
+      color: #5b6474;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="container">
+
+    <div class="logo">
+      📚 Plataforma de Cursos
+    </div>
+
+    <div>
+      <a href="/">Início</a>
+      <button id="sair">Sair</button>
+    </div>
+
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="welcome">
+
+    <h1>Minha Área</h1>
+
+    <p id="usuario">
+      Carregando sua conta...
+    </p>
+
+  </section>
+
+  <section class="card">
+
+    <h2>Meus cursos</h2>
+
+    <p class="status" id="status">
+      Carregando...
+    </p>
+
+    <div id="cursos"></div>
+
+  </section>
+
+  <div id="mensagem"></div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+  const SUPABASE_URL =
+    "https://nydgcbmfvoszchuixaml.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
+
+  const supabase =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+  async function iniciar() {
+
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+
+      window.location.href =
+        "/login.html";
+
+      return;
+    }
+
+    const usuario =
+      document.getElementById("usuario");
+
+    usuario.textContent =
+      "Olá! " +
+      (session.user.user_metadata?.name ||
+       session.user.email ||
+       "usuário") +
+      ".";
+
+    carregarCursos(session.user.id);
+  }
+
+  async function carregarCursos(userId) {
+
+    const status =
+      document.getElementById("status");
+
+    const container =
+      document.getElementById("cursos");
+
+    try {
+
+      const { data, error } =
+        await supabase
+          .from("progress")
+          .select("course_id,status")
+          .eq("user_id", userId);
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+
+        status.textContent =
+          "Você ainda não iniciou nenhum curso.";
+
+        return;
+      }
+
+      status.textContent =
+        "Cursos em andamento:";
+
+      const ids =
+        data.map(item => item.course_id);
+
+      const { data: cursos, error: cursosError } =
+        await supabase
+          .from("courses")
+          .select("id,title,description")
+          .in("id", ids);
+
+      if (cursosError) {
+        throw cursosError;
+      }
+
+      container.innerHTML =
+        (cursos || []).map(curso => {
+
+          const progresso =
+            data.find(
+              item => item.course_id === curso.id
+            );
+
+          return `
+            <div class="curso">
+
+              <h3>
+                ${escapeHtml(curso.title)}
+              </h3>
+
+              <p>
+                ${escapeHtml(
+                  curso.description || ""
+                )}
+              </p>
+
+              <p>
+                Status:
+                <strong>
+                  ${escapeHtml(
+                    progresso?.status || "em andamento"
+                  )}
+                </strong>
+              </p>
+
+              <a
+                class="btn"
+                href="/curso.html?id=${encodeURIComponent(curso.id)}"
+              >
+                Abrir curso
+              </a>
+
+            </div>
+          `;
+
+        }).join("");
+
+    } catch (error) {
+
+      console.error(error);
+
+      status.textContent =
+        "Não foi possível carregar seus cursos.";
+
+    }
+  }
+
+  function escapeHtml(valor) {
+
+    return String(valor || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  document
+    .getElementById("sair")
+    .addEventListener("click", async function() {
+
+      await supabase.auth.signOut();
+
+      window.location.href =
+        "/login.html";
+
+    });
+
+  iniciar();
+
+</script>
+
+</body>
+</html>
