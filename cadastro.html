@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar conta | Plataforma de Cursos</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background: #f5f3ee;
+      color: #2b2f38;
+    }
+
+    .box {
+      width: 100%;
+      max-width: 420px;
+      margin: 20px;
+      padding: 30px;
+      background: white;
+      border: 1px solid #d8d4c8;
+      border-radius: 12px;
+    }
+
+    h1 {
+      color: #1b2a4a;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d8d4c8;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 0;
+      border-radius: 25px;
+      background: #c99a3b;
+      color: #1b2a4a;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+    }
+
+    .links {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    a {
+      color: #1b2a4a;
+      text-decoration: none;
+    }
+
+    #mensagem {
+      margin-top: 15px;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>Criar conta</h1>
+
+  <p>Crie sua conta gratuitamente para começar.</p>
+
+  <form id="form">
+
+    <label for="nome">Nome</label>
+
+    <input
+      id="nome"
+      type="text"
+      required
+      autocomplete="name"
+    >
+
+    <label for="email">E-mail</label>
+
+    <input
+      id="email"
+      type="email"
+      required
+      autocomplete="email"
+    >
+
+    <label for="senha">Senha</label>
+
+    <input
+      id="senha"
+      type="password"
+      minlength="6"
+      required
+      autocomplete="new-password"
+    >
+
+    <label for="confirmar">Confirmar senha</label>
+
+    <input
+      id="confirmar"
+      type="password"
+      minlength="6"
+      required
+      autocomplete="new-password"
+    >
+
+    <button type="submit" id="botao">
+      Criar conta
+    </button>
+
+  </form>
+
+  <div id="mensagem"></div>
+
+  <div class="links">
+
+    <p>
+      Já possui uma conta?
+      <a href="/login.html">Entrar</a>
+    </p>
+
+    <p>
+      <a href="/">← Voltar para os cursos</a>
+    </p>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  const SUPABASE_URL =
+    "https://nydgcbmfvoszchuixaml.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_oToiwlSVBej_zb4ht0_Z3w_RHMDrwgK";
+
+  const supabase =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+  const form =
+    document.getElementById("form");
+
+  const mensagem =
+    document.getElementById("mensagem");
+
+  const botao =
+    document.getElementById("botao");
+
+  form.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const nome =
+      document.getElementById("nome").value.trim();
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const senha =
+      document.getElementById("senha").value;
+
+    const confirmar =
+      document.getElementById("confirmar").value;
+
+    if (senha !== confirmar) {
+
+      mensagem.textContent =
+        "As senhas não são iguais.";
+
+      return;
+    }
+
+    mensagem.textContent =
+      "Criando sua conta...";
+
+    botao.disabled = true;
+
+    try {
+
+      const { data, error } =
+        await supabase.auth.signUp({
+
+          email: email,
+
+          password: senha,
+
+          options: {
+            data: {
+              name: nome
+            }
+          }
+
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+
+        mensagem.textContent =
+          "Conta criada! Redirecionando...";
+
+        setTimeout(function() {
+          window.location.href =
+            "/dashboard.html";
+        }, 700);
+
+      } else {
+
+        mensagem.textContent =
+          "Conta criada! Verifique seu e-mail para confirmar o cadastro.";
+
+        botao.disabled = false;
+      }
+
+    } catch (error) {
+
+      console.error(error);
+
+      mensagem.textContent =
+        error.message ||
+        "Não foi possível criar a conta.";
+
+      botao.disabled = false;
+    }
+
+  });
+</script>
+
+</body>
+</html>
